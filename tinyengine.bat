@@ -1,5 +1,6 @@
 @echo off
 setlocal enableDelayedExpansion
+REM Lua version
 
 if not exist "CharLib.bat" (
 	echo CharLib is required - please download it and place it in the same directory as this script.
