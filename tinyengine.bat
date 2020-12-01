@@ -1,6 +1,5 @@
 @echo off
 setlocal enableDelayedExpansion
-REM Lua version
 
 if not exist "CharLib.bat" (
 	echo CharLib is required - please download it and place it in the same directory as this script.
@@ -23,11 +22,80 @@ REM Read in the code from the supplied file.
 echo Reading file...
 set /p contents=<!filepath!
 set terminator=END_SCRIPT
-set contents=!contents!!terminator!
+set "contents=!contents!!terminator!"
 
-REM Count the bytes in the file, as well as store them in variables.
-set tmpcopy=!contents!
+REM Time to interpret the file structure.
+set "tmpcopy=!contents!"
 set /a len=0
+
+REM Check the header
+setlocal
+	set sig=!tmpcopy:~0,4!
+	
+	if not "!sig!"=="TINY" (
+		echo Script is not valid - wrong signature.
+		exit /b 1
+	)
+endlocal
+set tmpcopy=!tmpcopy:~4!
+
+REM Get number of constants (max 254 due to Batch limitations)
+set "char=!tmpcopy:~0,1!"
+set tmpcopy=!tmpcopy:~1!
+call CharLib asc char 0 sizek
+set /a "sizek&=63"
+echo !sizek!
+
+REM Read in constants
+for /l %%i in (1, 1, !sizek!) do (
+	set /a kIndex=%%i-1
+	
+	REM Read in byte
+	set "char=!tmpcopy:~0,1!"
+	set tmpcopy=!tmpcopy:~1!
+
+	REM Constant is a boolean
+	if "!char!"=="@" (
+		echo boolean
+		set "char=!tmpcopy:~0,1!"
+		set tmpcopy=!tmpcopy:~1!
+		call CharLib asc char 0 bool
+		set /a "bool&=63"
+		set const!kIndex!=!bool!
+	)
+
+	if "!char!"=="A" (
+		echo num
+		REM Constant is a 24-bit number HELP
+		set /a num=0
+		for /l %%x in (0, 1, 3) do (
+			set "char=!tmpcopy:~0,1!"
+			set tmpcopy=!tmpcopy:~1!
+			call CharLib asc char 0 numbyte
+			set /a "numbyte&=63"
+			set /a "shift=%%x*6"
+			set /a "numbyte=!numbyte!<<(%%x*6)"
+			set /a "num|=!numbyte!"
+		)
+		set const!kIndex!=!num!
+	)
+
+	if "!char!"=="B" (
+		echo str
+		REM Constant is a string. Strings can only be 63 chars long. HELP
+		set "strc=!tmpcopy:~0,1!"
+		set tmpcopy=!tmpcopy:~1!
+		call CharLib asc strc 0 strlen
+		set /a "strlen&=63"
+		call set const!kIndex!=%%tmpcopy:~0,!strlen!%%
+		call set tmpcopy=%%tmpcopy:~!strlen!%%
+	)
+
+	call echo %%const!kIndex!%%
+)
+
+exit /b
+
 REM Essentially a do/while loop, or repeat/until, whatever you like
 :count
 	REM Shift out first character.
