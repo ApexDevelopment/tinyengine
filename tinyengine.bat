@@ -19,6 +19,7 @@ if not exist "!filepath!" (
 )
 
 REM Read in the code from the supplied file.
+echo Reading file...
 set /p contents=<!filepath!
 set terminator=END_SCRIPT
 set contents=!contents!!terminator!
@@ -31,10 +32,18 @@ REM Essentially a do/while loop, or repeat/until, whatever you like
 	REM Shift out first character.
 	set char=!tmpcopy:~0,1!
 	set tmpcopy=!tmpcopy:~1!
-	set code!len!=!char!
+
+	REM Convert the byte, which is in character form, into its ASCII decimal representation.
+	REM Calls into CharLib.bat, which is slow, so we do it in the pre-execution step.
+	call CharLib asc char 0 ascbyte
+
+	REM Save it for execution.
+	set code!len!=!ascbyte!
+
 	REM Increase length counter.
 	set /a len+=1
-	REM Test if we have reached the end.
+
+REM Test if we have reached the end.
 if not "!tmpcopy!"=="!terminator!" goto count
 
 REM Get the index of the last byte in the file.
@@ -42,7 +51,7 @@ set /a last=!len!-1
 
 echo Interpreting...
 
-REM Time to do bytecode interpreting.
+REM Time to do bytecode interpreting. Index is essentialy the program counter.
 set /a index=0
 
 REM TEMPORARY BRAINF--K STYLE VM
@@ -56,12 +65,8 @@ set /a passed=0
 	REM This is a little slow, but this is a prototype, so...
 	call set commd=%%code!index!%%
 
-	REM Convert the byte, which is in character form, into its ASCII decimal representation.
-	REM Calls into CharLib.bat, which is also slow.
-	call CharLib asc commd 0 ascbyte
-
 	REM Now we interpret the byte.
-	set /a "opcode=63&!ascbyte!"
+	set /a "opcode=63&!commd!"
 	
 	REM Check if we are fast-forwarding to a corresponding loop close.
 	if "!skipping!" EQU "0" (
