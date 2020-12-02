@@ -22,146 +22,217 @@ REM Read in the code from the supplied file.
 echo Reading file...
 set /p contents=<!filepath!
 set terminator=END_SCRIPT
-set contents=!contents!!terminator!
+set "contents=!contents!!terminator!"
 
-REM Count the bytes in the file, as well as store them in variables.
-set tmpcopy=!contents!
-set /a len=0
+REM Time to interpret the file structure.
+set "tmpcopy=!contents!"
+
+REM Check the header
+setlocal
+	set sig=!tmpcopy:~0,4!
+	
+	if not "!sig!"=="TINY" (
+		echo Script is not valid - wrong signature.
+		exit /b 1
+	)
+endlocal
+set tmpcopy=!tmpcopy:~4!
+
+REM Get number of constants (max 16,777,215 or 0xFFFFFF, INT24 max due to Batch limitations)
+call :nextint24 sizek
+echo sizek !sizek!
+
+REM Read in constants
+echo Parsing constants.
+for /l %%i in (1, 1, !sizek!) do (
+	set /a kIndex=%%i-1
+	
+	REM Read in byte
+	call :nextchar char
+
+	REM Constant is a boolean
+	if "!char!"=="@" (
+		REM echo boolean
+		call :nextbyte bool
+		set "const!kIndex!=B!bool!"
+	)
+	
+	if "!char!"=="A" (
+		REM echo num
+		REM Constant is a 24-bit number HELP
+		call :nextint24 num
+		set "const!kIndex!=N!num!"
+	)
+	
+	if "!char!"=="B" (
+		REM echo str
+		REM Constant is a string, again max length is INT24 max
+		call :nextint24 strlen
+		call set "const!kIndex!=S%%tmpcopy:~0,!strlen!%%"
+		call set "tmpcopy=%%tmpcopy:~!strlen!%%"
+	)
+
+	REM call echo %%const!kIndex!%%
+)
+
+REM Constants are parsed, time to parse the code.
+
 REM Essentially a do/while loop, or repeat/until, whatever you like
+echo Parsing code.
+set /a len=0
 :count
-	REM Shift out first character.
-	set char=!tmpcopy:~0,1!
-	set tmpcopy=!tmpcopy:~1!
+	call :nextbyte opcode
+	REM if "!opcode!" LEQ "10" (
+	REM
+	REM )
 
-	REM Convert the byte, which is in character form, into its ASCII decimal representation.
-	REM Calls into CharLib.bat, which is slow, so we do it in the pre-execution step.
-	call CharLib asc char 0 ascbyte
+	call :nextbyte argA
+	call :nextbyte argB
+	call :nextbyte argC
+
+	REM echo op !opcode! !argA! !argB! !argC!
 
 	REM Save it for execution.
-	set code!len!=!ascbyte!
+	set code!len!=!opcode!
+	set code!len!A=!argA!
+	set code!len!B=!argB!
+	set code!len!C=!argC!
 
 	REM Increase length counter.
 	set /a len+=1
 
 REM Test if we have reached the end.
 if not "!tmpcopy!"=="!terminator!" goto count
+REM exit /b 0
 
 REM Get the index of the last byte in the file.
 set /a last=!len!-1
 
 echo Interpreting...
 
-REM Time to do bytecode interpreting. Index is essentialy the program counter.
+REM Time to do bytecode interpreting.
+REM Index is essentialy the program counter. Retptr is the return stack pointer.
 set /a index=0
-
-REM TEMPORARY BRAINF--K STYLE VM
-set /a ptr=0
 set /a retptr=-1
-set /a skipping=0
-set /a passed=0
 
 :exec
 	REM Do a double expansion here to get the byte to interpret.
 	REM This is a little slow, but this is a prototype, so...
 	call set commd=%%code!index!%%
-
-	REM Now we interpret the byte.
-	set /a "opcode=63&!commd!"
+	call set argA=%%code!index!A%%
+	call set argB=%%code!index!B%%
+	call set argC=%%code!index!C%%
 	
-	REM Check if we are fast-forwarding to a corresponding loop close.
-	if "!skipping!" EQU "0" (
-		goto code!opcode!
-	) else (
-		if "!opcode!" EQU "4" (
-			set /a passed+=1
-		)
-
-		if "!opcode!" EQU "5" (
-			set /a passed-=1
-		)
-
-		if "!passed!" EQU "-1" (
-			set /a skipping=0
-		)
-	)
-	:back
-	call set value=%%mem!ptr!%%
+	REM Execute the opcode.
+	call :code!commd! !argA! !argB! !argC!
 	
 	REM For debugging the machine state
 	REM echo !opcode!, !ptr!, !value!
-
-	set /a index+=1
+set /a index+=1
 if !index! LEQ !last! goto exec
 
 echo Done.
 goto end
 
-REM Brainf--k commands, for now
+:nextchar
+REM setlocal
+	set "char=!tmpcopy:~0,1!"
+	set "tmpcopy=!tmpcopy:~1!"
+	set "%~1=!char!"
+REM endlocal & set "%~1=!char!"
+exit /b 0
+
+:nextbyte
+
+	set "char=!tmpcopy:~0,1!"
+	set "tmpcopy=!tmpcopy:~1!"
+
+	REM Convert the byte, which is in character form, into its ASCII decimal representation.
+	REM Calls into CharLib.bat, which is slow, so we do it in the pre-execution step.
+	call CharLib asc char 0 retval
+	set /a "%~1=!retval!&63"
+REM call echo outside setlocal %%%~1%%
+exit /b 0
+
+:nextint24
+	set /a num=0
+	for /l %%x in (0, 1, 3) do (
+		call :nextbyte numbyte
+		set /a "shift=%%x*6"
+		set /a "numbyte=!numbyte!<<(%%x*6)"
+		set /a "num|=!numbyte!"
+	)
+	set /a "%~1=!num!"
+exit /b 0
+
+REM Opcodes
 :code0
-	set /a mem!ptr!+=1
-goto back
+	set argA=%~1
+	set argB=%~2
+	REM echo COPY !argB! to !argA!
+	call set "val=%%mem!argB!%%"
+	set "mem!argA!=!val!"
+	REM call echo %%mem!argA!%%
+exit /b 0
 
 :code1
-	if not defined mem!ptr! (
-		set /a mem!ptr!=255
-	) else (
-		call set value=%%mem!ptr!%%
-		if "!value!" EQU "0" (
-			set /a mem!ptr!=255
-		) else (
-			set /a mem!ptr!-=1
-		)
-	)
-goto back
+	set argA=%~1
+	set argB=%~2
+	REM echo LOAD constant !argB! to !argA!
+	call set "val=%%const!argB!%%" 
+	set "mem!argA!=!val!"
+	REM call echo %%mem!argA!%%
+exit /b 0
 
 :code2
-	set /a ptr+=1
-	if "!ptr!" EQU "30000" (
-		set /a ptr=0
+	REM Temporarily the "call" opcode
+	set argA=%~1
+	set argB=%~2
+	set argC=%~3
+	set /a begin=!argA!+1
+	set /a end=!argA!+!argB!-1
+	call set func=%%mem!argA!%%
+	REM echo CALL !argA! !func!
+	set functype=!func:~0,1!
+	set func=!func:~1!
+
+	if "!functype!"=="S" (
+		REM echo Builtin function called.
+		call :B!func! !begin! !end!
 	)
-goto back
+
+	if "!functype!"=="C" (
+		echo Script function called. This is not supported yet.
+	)
+exit /b 0
 
 :code3
-	set /a ptr-=1
-	if "!ptr!" EQU "-1" (
-		set /a ptr=29999
-	)
-goto back
+exit /b 0
 
 :code4
-	call set value=%%mem!ptr!%%
-	if "!value!" EQU "0" (
-		REM Skip to corresponding loop close
-		set /a skipping=1
-	) else (
-		REM Push the current position onto the return stack
-		set /a retptr+=1
-		set /a "retstack!retptr!=!index!-1"
-	)
-goto back
+exit /b 0
 
 :code5
-	REM Check for the corresponding loop start to jump to
-	if "!retptr!" GEQ "0" (
-		REM Only jump to it if the current cell is not zero
-		call set value=%%mem!ptr!%%
-		if "!value!" NEQ "0" (
-			call set /a index=%%retstack!retptr!%%
-			set /a retptr-=1
-		)
-		goto back
-	) else (
-		echo Return stack underflow (too many loop closes)
-		exit /b 1
-	)
-goto back
+exit /b 0
 
 :code6
-	call set value=%%mem!ptr!%%
-	call CharLib chr !value! outputchr
-	echo Script output: !outputchr!
-	REM echo !value!
-goto back
+exit /b 0
+
+REM Builtin functions
+:Bprint
+setlocal
+	for /l %%x in (%~1, 1, %~2) do (
+		set argidx=%%x
+		call set "arg=%%mem!argidx!%%"
+		set argtype=!arg:~0,1!
+		set "arg=!arg:~1!"
+
+		set "outpt=!outpt! !arg!"
+	)
+	set "outpt=!outpt:~1!"
+	echo [SCRIPT] !outpt!
+endlocal
+exit /b 0
 
 :end
 REM echo Exiting.
