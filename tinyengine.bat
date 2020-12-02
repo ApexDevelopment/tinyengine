@@ -143,7 +143,6 @@ REM endlocal & set "%~1=!char!"
 exit /b 0
 
 :nextbyte
-
 	set "char=!tmpcopy:~0,1!"
 	set "tmpcopy=!tmpcopy:~1!"
 
