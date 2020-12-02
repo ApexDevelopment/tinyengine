@@ -38,9 +38,9 @@ setlocal
 endlocal
 set tmpcopy=!tmpcopy:~4!
 
-REM Get number of constants (max 254 due to Batch limitations)
-call :nextbyte sizek
-REM echo !sizek!
+REM Get number of constants (max 16,777,215 or 0xFFFFFF, INT24 max due to Batch limitations)
+call :nextint24 sizek
+echo sizek !sizek!
 
 REM Read in constants
 echo Parsing constants.
@@ -66,8 +66,8 @@ for /l %%i in (1, 1, !sizek!) do (
 	
 	if "!char!"=="B" (
 		REM echo str
-		REM Constant is a string. Strings can only be 63 chars long. HELP
-		call :nextbyte strlen
+		REM Constant is a string, again max length is INT24 max
+		call :nextint24 strlen
 		call set "const!kIndex!=S%%tmpcopy:~0,!strlen!%%"
 		call set "tmpcopy=%%tmpcopy:~!strlen!%%"
 	)
@@ -90,7 +90,7 @@ set /a len=0
 	call :nextbyte argB
 	call :nextbyte argC
 
-	echo op !opcode! !argA! !argB! !argC!
+	REM echo op !opcode! !argA! !argB! !argC!
 
 	REM Save it for execution.
 	set code!len!=!opcode!
@@ -135,12 +135,15 @@ echo Done.
 goto end
 
 :nextchar
+REM setlocal
 	set "char=!tmpcopy:~0,1!"
 	set "tmpcopy=!tmpcopy:~1!"
 	set "%~1=!char!"
+REM endlocal & set "%~1=!char!"
 exit /b 0
 
 :nextbyte
+
 	set "char=!tmpcopy:~0,1!"
 	set "tmpcopy=!tmpcopy:~1!"
 
@@ -148,6 +151,7 @@ exit /b 0
 	REM Calls into CharLib.bat, which is slow, so we do it in the pre-execution step.
 	call CharLib asc char 0 retval
 	set /a "%~1=!retval!&63"
+REM call echo outside setlocal %%%~1%%
 exit /b 0
 
 :nextint24
@@ -165,7 +169,7 @@ REM Opcodes
 :code0
 	set argA=%~1
 	set argB=%~2
-	echo COPY !argB! to !argA!
+	REM echo COPY !argB! to !argA!
 	call set "val=%%mem!argB!%%"
 	set "mem!argA!=!val!"
 	REM call echo %%mem!argA!%%
@@ -174,7 +178,7 @@ exit /b 0
 :code1
 	set argA=%~1
 	set argB=%~2
-	echo LOAD constant !argB! to !argA!
+	REM echo LOAD constant !argB! to !argA!
 	call set "val=%%const!argB!%%" 
 	set "mem!argA!=!val!"
 	REM call echo %%mem!argA!%%
@@ -188,12 +192,12 @@ exit /b 0
 	set /a begin=!argA!+1
 	set /a end=!argA!+!argB!-1
 	call set func=%%mem!argA!%%
-	echo CALL !argA! !func!
+	REM echo CALL !argA! !func!
 	set functype=!func:~0,1!
 	set func=!func:~1!
 
 	if "!functype!"=="S" (
-		echo Builtin function called.
+		REM echo Builtin function called.
 		call :B!func! !begin! !end!
 	)
 
@@ -226,7 +230,7 @@ setlocal
 		set "outpt=!outpt! !arg!"
 	)
 	set "outpt=!outpt:~1!"
-	echo !outpt!
+	echo [SCRIPT] !outpt!
 endlocal
 exit /b 0
 
