@@ -215,15 +215,18 @@ exit /b 0
 exit /b 0
 
 REM Builtin functions
-:Btst
+:Bprint
 setlocal
-	echo TinyEngine test function called.
-
 	for /l %%x in (%~1, 1, %~2) do (
 		set argidx=%%x
 		call set "arg=%%mem!argidx!%%"
-		echo Argument !argidx! is !arg!
+		set argtype=!arg:~0,1!
+		set "arg=!arg:~1!"
+
+		set "outpt=!outpt! !arg!"
 	)
+	set "outpt=!outpt:~1!"
+	echo !outpt!
 endlocal
 exit /b 0
 
