@@ -40,7 +40,7 @@ set tmpcopy=!tmpcopy:~4!
 
 REM Get number of constants (max 16,777,215 or 0xFFFFFF, INT24 max due to Batch limitations)
 call :nextint24 sizek
-echo sizek !sizek!
+REM echo sizek !sizek!
 
 REM Read in constants
 echo Parsing constants.
@@ -135,56 +135,63 @@ echo Done.
 goto end
 
 :nextchar
-REM setlocal
-	set "char=!tmpcopy:~0,1!"
-	set "tmpcopy=!tmpcopy:~1!"
-	set "%~1=!char!"
-REM endlocal & set "%~1=!char!"
+setlocal
+	REM Get next character
+	set "chr=!tmpcopy:~0,1!"
+endlocal & set "%~1=%chr%"
+REM Shift out the character
+set "tmpcopy=!tmpcopy:~1!"
 exit /b 0
 
 :nextbyte
-	set "char=!tmpcopy:~0,1!"
-	set "tmpcopy=!tmpcopy:~1!"
+setlocal
+	REM Get next byte
+	set "chr=!tmpcopy:~0,1!"
 
 	REM Convert the byte, which is in character form, into its ASCII decimal representation.
-	REM Calls into CharLib.bat, which is slow, so we do it in the pre-execution step.
-	call CharLib asc char 0 retval
-	set /a "%~1=!retval!&63"
-REM call echo outside setlocal %%%~1%%
+	REM Calls into CharLib.bat, which is slow.
+	call CharLib asc chr 0 retval
+	set /a "retval=!retval!&63"
+endlocal & set "%~1=%retval%"
+REM Shift out the byte
+set "tmpcopy=!tmpcopy:~1!"
 exit /b 0
 
 :nextint24
+setlocal
 	set /a num=0
 	for /l %%x in (0, 1, 3) do (
 		call :nextbyte numbyte
 		set /a "shift=%%x*6"
 		set /a "numbyte=!numbyte!<<(%%x*6)"
-		set /a "num|=!numbyte!"
+		set /a "finalnum|=!numbyte!"
 	)
-	set /a "%~1=!num!"
+endlocal & set "%~1=%finalnum%"
+REM We have to do this ourselves because the call to nextbyte was localized
+set "tmpcopy=!tmpcopy:~4!"
 exit /b 0
 
 REM Opcodes
 :code0
-	set argA=%~1
+setlocal
+	REM MOVE
 	set argB=%~2
-	REM echo COPY !argB! to !argA!
 	call set "val=%%mem!argB!%%"
-	set "mem!argA!=!val!"
-	REM call echo %%mem!argA!%%
+	REM set "mem!argA!=!val!"
+endlocal & set "mem%~1=%val%"
 exit /b 0
 
 :code1
-	set argA=%~1
+setlocal
+	REM LOADK
 	set argB=%~2
-	REM echo LOAD constant !argB! to !argA!
 	call set "val=%%const!argB!%%" 
-	set "mem!argA!=!val!"
-	REM call echo %%mem!argA!%%
+	REM set "mem!argA!=!val!"
+endlocal & set "mem%~1=%val%"
 exit /b 0
 
 :code2
-	REM Temporarily the "call" opcode
+	REM CALL
 	set argA=%~1
 	set argB=%~2
 	set argC=%~3
@@ -192,29 +199,57 @@ exit /b 0
 	set /a end=!argA!+!argB!-1
 	call set func=%%mem!argA!%%
 	REM echo CALL !argA! !func!
-	set functype=!func:~0,1!
+	set vtype=!func:~0,1!
 	set func=!func:~1!
 
-	if "!functype!"=="S" (
+	if "!vtype!"=="S" (
 		REM echo Builtin function called.
 		call :B!func! !begin! !end!
 	)
 
-	if "!functype!"=="C" (
+	if "!vtype!"=="C" (
 		echo Script function called. This is not supported yet.
 	)
 exit /b 0
 
 :code3
+	REM UNM
+	set argA=%~1
+	set argB=%~2
+	call set "val=%%mem!argB!%%"
+	set vtype=!val:~0,1!
+	
+	if "!vtype!"=="N" (
+		set /a "val=-!val:~1!"
+		set "mem!argA!=N!val!"
+	) else (
+		echo Attempted to negate a non-number value.
+		exit /b 1
+	)
 exit /b 0
 
 :code4
+	REM NOT
 exit /b 0
 
 :code5
+	REM LEN
 exit /b 0
 
 :code6
+	REM ADD
+exit /b 0
+
+:code7
+	REM SUB
+exit /b 0
+
+:code8
+	REM MUL
+exit /b 0
+
+:code9
+	REM DIV
 exit /b 0
 
 REM Builtin functions
