@@ -173,7 +173,7 @@ exit /b 0
 REM Opcodes
 :code0
 setlocal
-	REM MOVE
+	REM MOV
 	set argB=%~2
 	call set "val=%%mem!argB!%%"
 	REM set "mem!argA!=!val!"
@@ -383,11 +383,12 @@ endlocal
 exit /b 0
 
 :Binput
-setlocal
+REM setlocal
 	REM Can only store input in a pre-defined location.
 	set argidx=%~1
 	set /p "input=>> "
-endlocal & set "mem!argidx!=S!input!"
+	set "mem!argidx!=S!input!"
+REM endlocal & set "mem!argidx!=S!input!"
 exit /b 0
 
 :Bstoi
