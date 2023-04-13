@@ -25,6 +25,10 @@ def main(infile, outfile):
 		"MOD": [0x0A, 3], # MOD DEST A B
 		"EQ": [0x0B, 3], # EQ DEST A B
 		"LT": [0x0C, 3], # LT DEST A B
+		"LE": [0x0D, 3], # LE DEST A B
+		"JMP": [0x0E, 1], # JMP TARGET
+		"JS": [0x0F, 2], # JS A TARGET
+		"JNS": [0x10, 2], # JNS A TARGET
 	}
 
 	# T I N Y

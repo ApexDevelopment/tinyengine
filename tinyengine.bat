@@ -445,6 +445,107 @@ exit /b 0
 	)
 exit /b 0
 
+:code13
+	REM LE
+	set argA=%~1
+	set argB=%~2
+	set argC=%~3
+	call set "valA=%%mem!argB!%%"
+	call set "valB=%%mem!argC!%%"
+	set vtypeA=!valA:~0,1!
+	set vtypeB=!valB:~0,1!
+
+	if "!vtypeA!"=="N" (
+		if "!vtypeB!"=="N" (
+			set /a "valA=!valA:~1!"
+			set /a "valB=!valB:~1!"
+			if "!valA!"<="!valB!" (
+				set "mem!argA!=B1"
+			) else (
+				set "mem!argA!=B0"
+			)
+		) else (
+			echo Attempted to compare a non-number value (right).
+			exit /b 1
+		)
+	) else (
+		echo Attempted to compare a non-number value (left).
+		exit /b 1
+	)
+exit /b 0
+
+:code14
+	REM JMP
+	set argA=%~1
+	call set "valA=%%mem!argA!%%"
+	set vtypeA=!valA:~0,1!
+
+	if "!vtypeA!"=="N" (
+		set /a "valA=!valA:~1!"
+		set /a "valA-=1"
+		set /a "index=!valA!"
+	) else (
+		echo Attempted to jump to a non-number value.
+		exit /b 1
+	)
+exit /b 0
+
+:code15
+	REM JS
+	set argA=%~1
+	set argB=%~2
+	call set "valA=%%mem!argA!%%"
+	call set "valB=%%mem!argB!%%"
+	set vtypeA=!valA:~0,1!
+	set vtypeB=!valB:~0,1!
+
+	if "!vtypeA!"=="B" (
+		set /a "valA=!valA:~1!"
+
+		if "!vtypeB!"=="N" (
+			set /a "valB=!valB:~1!"
+			set /a "valB-=1"
+			if "!valA!"=="1" (
+				set /a "index=!valB!"
+			)
+		) else (
+			echo Attempted to jump to a non-number value.
+			exit /b 1
+		)
+	) else (
+		echo Attempted to use a non-boolean value as a jump condition.
+		exit /b 1
+	)
+exit /b 0
+
+:code16
+	REM JNS
+	set argA=%~1
+	set argB=%~2
+	call set "valA=%%mem!argA!%%"
+	call set "valB=%%mem!argB!%%"
+	set vtypeA=!valA:~0,1!
+	set vtypeB=!valB:~0,1!
+
+	if "!vtypeA!"=="B" (
+		set /a "valA=!valA:~1!"
+
+		if "!vtypeB!"=="N" (
+			set /a "valB=!valB:~1!"
+			set /a "valB-=1"
+			if not "!valA!"=="1" (
+				set /a "index=!valB!"
+			)
+		) else (
+			echo Attempted to jump to a non-number value.
+			exit /b 1
+		)
+	) else (
+		echo Attempted to use a non-boolean value as a jump condition.
+		exit /b 1
+	)
+exit /b 0
+
 REM Builtin functions
 :Bprint
 setlocal
