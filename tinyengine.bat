@@ -1,5 +1,9 @@
 @echo off
 setlocal enableDelayedExpansion
+set "VERSION=2023.4-1alpha"
+
+echo ====================================
+echo TinyEngine v!VERSION!
 
 if not exist "CharLib.bat" (
 	echo CharLib is required - please download it and place it in the same directory as this script.
@@ -19,7 +23,6 @@ if not exist "!filepath!" (
 )
 
 REM Read in the code from the supplied file.
-echo Reading file...
 set /p contents=<!filepath!
 set terminator=END_SCRIPT
 set "contents=!contents!!terminator!"
@@ -42,7 +45,6 @@ REM Get number of constants (max 16,777,215 or 0xFFFFFF, INT24 max due to Batch 
 call :nextint24 sizek
 
 REM Read in constants
-echo Parsing !sizek! constants...
 for /l %%i in (1, 1, !sizek!) do (
 	set /a kIndex=%%i-1
 	
@@ -75,9 +77,9 @@ for /l %%i in (1, 1, !sizek!) do (
 )
 
 REM Constants are parsed, time to parse the code.
+echo Constants: !sizek!
 
 REM Essentially a do/while loop, or repeat/until, whatever you like
-echo Parsing code...
 set /a len=0
 :count
 	call :nextbyte opcode
@@ -107,7 +109,8 @@ REM exit /b 0
 REM Get the index of the last byte in the file.
 set /a last=!len!-1
 
-echo Interpreting...
+echo Begin execution.
+echo ====================================
 
 REM Time to do bytecode interpreting.
 REM Index is essentialy the program counter. Retptr is the return stack pointer.
@@ -129,8 +132,6 @@ set /a retptr=-1
 	REM echo !opcode!, !ptr!, !value!
 set /a index+=1
 if !index! LEQ !last! goto exec
-
-echo Done.
 goto end
 
 :nextchar
@@ -558,7 +559,7 @@ setlocal
 		set "outpt=!outpt! !arg!"
 	)
 	set "outpt=!outpt:~1!"
-	echo [SCRIPT] !outpt!
+	echo !outpt!
 endlocal
 exit /b 0
 
