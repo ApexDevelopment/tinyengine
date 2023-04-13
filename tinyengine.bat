@@ -40,10 +40,9 @@ set tmpcopy=!tmpcopy:~4!
 
 REM Get number of constants (max 16,777,215 or 0xFFFFFF, INT24 max due to Batch limitations)
 call :nextint24 sizek
-REM echo sizek !sizek!
 
 REM Read in constants
-echo Parsing constants.
+echo Parsing !sizek! constants...
 for /l %%i in (1, 1, !sizek!) do (
 	set /a kIndex=%%i-1
 	
@@ -78,7 +77,7 @@ for /l %%i in (1, 1, !sizek!) do (
 REM Constants are parsed, time to parse the code.
 
 REM Essentially a do/while loop, or repeat/until, whatever you like
-echo Parsing code.
+echo Parsing code...
 set /a len=0
 :count
 	call :nextbyte opcode
@@ -384,10 +383,11 @@ endlocal
 exit /b 0
 
 :Binput
+setlocal
 	REM Can only store input in a pre-defined location.
 	set argidx=%~1
 	set /p "input=>> "
-	set "mem!argidx!=S!input!"
+endlocal & set "mem!argidx!=S!input!"
 exit /b 0
 
 :Bstoi
