@@ -230,26 +230,141 @@ exit /b 0
 
 :code4
 	REM NOT
+	set argA=%~1
+	set argB=%~2
+	call set "val=%%mem!argB!%%"
+	set vtype=!val:~0,1!
+
+	if "!vtype!"=="B" (
+		set /a "val=!val:~1!"
+		set /a "val=!val!^1"
+		set "mem!argA!=B!val!"
+	) else (
+		echo Attempted to flip a non-boolean value.
+		exit /b 1
+	)
 exit /b 0
 
 :code5
 	REM LEN
+	set argA=%~1
+	set argB=%~2
+	call set "val=%%mem!argB!%%"
+	set vtype=!val:~0,1!
+
+	if "!vtype!"=="S" (
+		set "val=!val:~1!"
+		REM Get the length of the string using CharLib
+		call CharLib StrLen val retval
+		set "mem!argA!=N!retval!"
+	) else (
+		echo Attempted to get the length of a non-string value.
+		exit /b 1
+	)
 exit /b 0
 
 :code6
 	REM ADD
+	set argA=%~1
+	set argB=%~2
+	set argC=%~3
+	call set "valA=%%mem!argB!%%"
+	call set "valB=%%mem!argC!%%"
+	set vtypeA=!valA:~0,1!
+	set vtypeB=!valB:~0,1!
+
+	if "!vtypeA!"=="N" (
+		if "!vtypeB!"=="N" (
+			set /a "valA=!valA:~1!"
+			set /a "valB=!valB:~1!"
+			set /a "valA+=!valB!"
+			set "mem!argA!=N!valA!"
+		) else (
+			echo Attempted to add a non-number value (right).
+			exit /b 1
+		)
+	) else (
+		echo Attempted to add a non-number value (left).
+		exit /b 1
+	)
 exit /b 0
 
 :code7
 	REM SUB
+	set argA=%~1
+	set argB=%~2
+	set argC=%~3
+	call set "valA=%%mem!argB!%%"
+	call set "valB=%%mem!argC!%%"
+	set vtypeA=!valA:~0,1!
+	set vtypeB=!valB:~0,1!
+
+	if "!vtypeA!"=="N" (
+		if "!vtypeB!"=="N" (
+			set /a "valA=!valA:~1!"
+			set /a "valB=!valB:~1!"
+			set /a "valA-=!valB!"
+			set "mem!argA!=N!valA!"
+		) else (
+			echo Attempted to subtract a non-number value (right).
+			exit /b 1
+		)
+	) else (
+		echo Attempted to subtract a non-number value (left).
+		exit /b 1
+	)
 exit /b 0
 
 :code8
 	REM MUL
+	set argA=%~1
+	set argB=%~2
+	set argC=%~3
+	call set "valA=%%mem!argB!%%"
+	call set "valB=%%mem!argC!%%"
+	set vtypeA=!valA:~0,1!
+	set vtypeB=!valB:~0,1!
+
+	if "!vtypeA!"=="N" (
+		if "!vtypeB!"=="N" (
+			set /a "valA=!valA:~1!"
+			set /a "valB=!valB:~1!"
+			set /a "valA*=!valB!"
+			set "mem!argA!=N!valA!"
+		) else (
+			echo Attempted to multiply a non-number value (right).
+			exit /b 1
+		)
+	) else (
+		echo Attempted to multiply a non-number value (left).
+		exit /b 1
+	)
 exit /b 0
 
 :code9
 	REM DIV
+	set argA=%~1
+	set argB=%~2
+	set argC=%~3
+	call set "valA=%%mem!argB!%%"
+	call set "valB=%%mem!argC!%%"
+	set vtypeA=!valA:~0,1!
+	set vtypeB=!valB:~0,1!
+
+	if "!vtypeA!"=="N" (
+		if "!vtypeB!"=="N" (
+			set /a "valA=!valA:~1!"
+			set /a "valB=!valB:~1!"
+			set /a "valA*=!valB!"
+			set "mem!argA!=N!valA!"
+		) else (
+			echo Attempted to divide a non-number value (right).
+			exit /b 1
+		)
+	) else (
+		echo Attempted to divide a non-number value (left).
+		exit /b 1
+	)
 exit /b 0
 
 REM Builtin functions
@@ -266,6 +381,30 @@ setlocal
 	set "outpt=!outpt:~1!"
 	echo [SCRIPT] !outpt!
 endlocal
+exit /b 0
+
+:Binput
+	REM Can only store input in a pre-defined location.
+	set argidx=%~1
+	set /p "input=>> "
+	set "mem!argidx!=S!input!"
+exit /b 0
+
+:Bstoi
+	REM Convert a string to an integer.
+	set argidx=%~1
+	call set "arg=%%mem!argidx!%%"
+	set argtype=!arg:~0,1!
+	set "arg=!arg:~1!"
+
+	if "!argtype!"=="S" (
+		REM Evaluate the string as an integer.
+		set /a "arg=!arg!"
+		set "mem!argidx!=N!arg!"
+	) else (
+		echo Attempted to convert a non-string value to an integer.
+		exit /b 1
+	)
 exit /b 0
 
 :end
