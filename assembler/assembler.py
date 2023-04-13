@@ -23,6 +23,8 @@ def main(infile, outfile):
 		"MUL": [0x08, 3], # MUL DEST A B
 		"DIV": [0x09, 3], # DIV DEST A B
 		"MOD": [0x0A, 3], # MOD DEST A B
+		"EQ": [0x0B, 3], # EQ DEST A B
+		"LT": [0x0C, 3], # LT DEST A B
 	}
 
 	# T I N Y

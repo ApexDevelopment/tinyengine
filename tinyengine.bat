@@ -366,7 +366,7 @@ exit /b 0
 	)
 exit /b 0
 
-:code9
+:code10
 	REM MOD
 	set argA=%~1
 	set argB=%~2
@@ -388,6 +388,59 @@ exit /b 0
 		)
 	) else (
 		echo Attempted to mod a non-number value (left).
+		exit /b 1
+	)
+exit /b 0
+
+:code11
+	REM EQ
+	set argA=%~1
+	set argB=%~2
+	set argC=%~3
+	call set "valA=%%mem!argB!%%"
+	call set "valB=%%mem!argC!%%"
+	set vtypeA=!valA:~0,1!
+	set vtypeB=!valB:~0,1!
+
+	if "!vtypeA!"=="!vtypeB!" (
+		set /a "valA=!valA:~1!"
+		set /a "valB=!valB:~1!"
+		if "!valA!"=="!valB!" (
+			set "mem!argA!=B1"
+		) else (
+			set "mem!argA!=B0"
+		)
+	) else (
+		echo Attempted to compare two different value types.
+		exit /b 1
+	)
+exit /b 0
+
+:code12
+	REM LT
+	set argA=%~1
+	set argB=%~2
+	set argC=%~3
+	call set "valA=%%mem!argB!%%"
+	call set "valB=%%mem!argC!%%"
+	set vtypeA=!valA:~0,1!
+	set vtypeB=!valB:~0,1!
+
+	if "!vtypeA!"=="N" (
+		if "!vtypeB!"=="N" (
+			set /a "valA=!valA:~1!"
+			set /a "valB=!valB:~1!"
+			if "!valA!"<"!valB!" (
+				set "mem!argA!=B1"
+			) else (
+				set "mem!argA!=B0"
+			)
+		) else (
+			echo Attempted to compare a non-number value (right).
+			exit /b 1
+		)
+	) else (
+		echo Attempted to compare a non-number value (left).
 		exit /b 1
 	)
 exit /b 0
