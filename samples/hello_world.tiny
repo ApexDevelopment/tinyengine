@@ -1,0 +1,6 @@
+def string "print"
+def string "Hello, world!"
+
+LOADK $0 0
+LOADK $1 1
+CALL $0 2 0
