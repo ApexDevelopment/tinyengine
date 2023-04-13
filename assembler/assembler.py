@@ -22,6 +22,7 @@ def main(infile, outfile):
 		"SUB": [0x07, 3], # SUB DEST A B
 		"MUL": [0x08, 3], # MUL DEST A B
 		"DIV": [0x09, 3], # DIV DEST A B
+		"MOD": [0x0A, 3], # MOD DEST A B
 	}
 
 	# T I N Y

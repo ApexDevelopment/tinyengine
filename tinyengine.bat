@@ -366,6 +366,32 @@ exit /b 0
 	)
 exit /b 0
 
+:code9
+	REM MOD
+	set argA=%~1
+	set argB=%~2
+	set argC=%~3
+	call set "valA=%%mem!argB!%%"
+	call set "valB=%%mem!argC!%%"
+	set vtypeA=!valA:~0,1!
+	set vtypeB=!valB:~0,1!
+
+	if "!vtypeA!"=="N" (
+		if "!vtypeB!"=="N" (
+			set /a "valA=!valA:~1!"
+			set /a "valB=!valB:~1!"
+			set /a "valA%%=!valB!"
+			set "mem!argA!=N!valA!"
+		) else (
+			echo Attempted to mod a non-number value (right).
+			exit /b 1
+		)
+	) else (
+		echo Attempted to mod a non-number value (left).
+		exit /b 1
+	)
+exit /b 0
+
 REM Builtin functions
 :Bprint
 setlocal
