@@ -1,0 +1,11 @@
+def string "concat"
+def string "Concatenation"
+def string " test success!"
+def string "print"
+
+LOADK $0 0
+LOADK $1 1
+LOADK $2 2
+CALL $0 3 1
+LOADK $0 3
+CALL $0 2 0

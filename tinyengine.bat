@@ -462,12 +462,11 @@ endlocal
 exit /b 0
 
 :Binput
-REM setlocal
+setlocal
 	REM Can only store input in a pre-defined location.
-	set argidx=%~1
 	set /p "input=>> "
-	set "mem!argidx!=S!input!"
-REM endlocal & set "mem!argidx!=S!input!"
+	set "retval=S!input!"
+endlocal & set "mem%1=%retval%"
 exit /b 0
 
 :Bstoi
@@ -487,6 +486,25 @@ exit /b 0
 	)
 exit /b 0
 
+:Bconcat
+setlocal
+	REM Concatenate two strings.
+	for /l %%x in (%~1, 1, %~2) do (
+		set argidx=%%x
+		call set "arg=%%mem!argidx!%%"
+		set argtype=!arg:~0,1!
+		set "arg=!arg:~1!"
+
+		if not "!argtype!"=="S" (
+			echo Attempted to concatenate a non-string value.
+			exit /b 1
+		)
+
+		set "outpt=!outpt!!arg!"
+	)
+	set "retval=S!outpt!"
+endlocal & set "mem%~1=%retval%"
+exit /b 0
+
 :end
-REM echo Exiting.
 exit /b 0
