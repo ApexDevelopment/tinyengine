@@ -7,6 +7,7 @@ This project was inspired by [this tweet](https://twitter.com/m_bitsnbites/statu
 - Some characters cannot be read in from bytecode files because of how Batch interprets them, this includes null bytes and the variable markers (% and !)
 - Due to that, lots of space is wasted in the bytecode, namely the two most significant bits of every byte in the file must be `01` (from most to least significant)
 - There is no way to natively use floating point numbers, so everything is an integer
+- This thing is so ridiculously slow.
 
 ## Project Goals
 - [ ] Lua-style bytecode implementation
